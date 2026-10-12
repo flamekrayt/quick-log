@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quick Log</title>
+  <style>
+    /* ── Tokens ── */
+    :root {
+      --bg:        #F0F2F5;
+      --surface:   #FFFFFF;
+      --border:    #D8DCE3;
+      --text:      #1A1D23;
+      --muted:     #6B7280;
+      --accent:    #2A52A0;
+      --accent-dk: #1E3D78;
+      --success:   #1A6B3C;
+      --success-bg:#E6F4ED;
+      --error:     #9B1C1C;
+      --error-bg:  #FDE8E8;
+      --radius:    6px;
+      --font:      'Inter', system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px 16px 48px;
+    }
+
+    /* ── Layout ── */
+    .wrap {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 28px;
+    }
+
+    header h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    header p {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    /* ── Section label ── */
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 10px;
+    }
+
+    /* ── Category groups ── */
+    .category {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .category-header {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--accent);
+      padding: 10px 14px 8px;
+      border-bottom: 1px solid var(--border);
+      background: #F7F9FC;
+      letter-spacing: 0.01em;
+    }
+
+    .btn-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1px;
+      background: var(--border);
+    }
+
+    /* Wide rows: 1 column */
+    .btn-grid.wide {
+      grid-template-columns: 1fr;
+    }
+
+    .log-btn {
+      background: var(--surface);
+      border: none;
+      padding: 11px 12px;
+      font-size: 0.8rem;
+      color: var(--text);
+      cursor: pointer;
+      text-align: left;
+      line-height: 1.35;
+      transition: background 0.12s;
+    }
+
+    .log-btn:hover  { background: #EEF2FA; }
+    .log-btn:active { background: #DDE5F5; }
+
+    .log-btn .complexity {
+      display: block;
+      font-weight: 600;
+      color: var(--accent);
+      font-size: 0.75rem;
+    }
+
+    .log-btn .detail {
+      display: block;
+      color: var(--muted);
+      font-size: 0.72rem;
+      margin-top: 1px;
+    }
+
+    /* ── Free text ── */
+    .adhoc-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-top: 4px;
+    }
+
+    textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      font-family: var(--font);
+      font-size: 0.85rem;
+      color: var(--text);
+      resize: vertical;
+      min-height: 72px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    textarea:focus { border-color: var(--accent); }
+
+    .submit-btn {
+      margin-top: 10px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      padding: 10px 22px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+
+    .submit-btn:hover   { background: var(--accent-dk); }
+    .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── Toast ── */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(12px);
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
+      white-space: nowrap;
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    #toast.success { background: var(--success-bg); color: var(--success); border: 1px solid #A7D7BE; }
+    #toast.error   { background: var(--error-bg);   color: var(--error);   border: 1px solid #F5C0C0; }
+
+    /* ── Loading state ── */
+    #loading {
+      text-align: center;
+      padding: 40px 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    #main { display: none; }
+
+    /* ── Responsive ── */
+    @media (max-width: 480px) {
+      .btn-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Quick Log</h1>
+    <p id="datetime">Loading…</p>
+  </header>
+
+  <div id="loading">Loading options…</div>
+  <div id="main">
+    <div id="categories"></div>
+
+    <div class="section-label" style="margin-top:20px;">Ad-hoc entry</div>
+    <div class="adhoc-card">
+      <textarea id="adhoc" placeholder="Type a custom entry…"></textarea>
+      <button class="submit-btn" onclick="submitAdhoc()">Save entry</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+  // ── Config ──────────────────────────────────────────────
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbytIkIYWgTpI28ZrxpF-G8QLRzP1xutfIG-aEDR1BrQfDKx2fAhJQARkd7EDqyBt-Pv/exec";
+
+  // ── Clock ────────────────────────────────────────────────
+  // Updates the date/time display in the header every second
+  function updateClock() {
+    const now = new Date();
+    document.getElementById("datetime").textContent =
+      now.toLocaleDateString("en-GB", { weekday:"long", day:"numeric", month:"long", year:"numeric" }) +
+      "  ·  " +
+      now.toLocaleTimeString("en-GB", { hour:"2-digit", minute:"2-digit" });
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // ── Group buttons by category prefix (e.g. "Appraisal", "R&P") ──
+  // Reads the options list and organises them into labelled groups
+  function groupOptions(options) {
+    const groups = {};
+    options.forEach(opt => {
+      const colon = opt.indexOf(":");
+      const key   = colon > -1 ? opt.slice(0, colon).trim() : "Other";
+      const label = colon > -1 ? opt.slice(colon + 1).trim() : opt;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push({ full: opt, label });
+    });
+    return groups;
+  }
+
+  // ── Parse button label into complexity + detail lines ──
+  // Splits "Simple query/SR (5mins or less)" into two display lines
+  function parseLabel(label) {
+    const match = label.match(/^(Simple|Intermediate|Complex|Monthly KPI report related work|ACN Training)(.*)/i);
+    if (match) {
+      return { complexity: match[1], detail: match[2].trim() };
+    }
+    return { complexity: label, detail: "" };
+  }
+
+  // ── Render buttons ────────────────────────────────────────
+  // Builds the button grid from the options fetched from Google Sheets
+  function renderGroups(groups) {
+    const container = document.getElementById("categories");
+    container.innerHTML = "";
+
+    Object.entries(groups).forEach(([category, items]) => {
+      const card = document.createElement("div");
+      card.className = "category";
+
+      const header = document.createElement("div");
+      header.className = "category-header";
+      header.textContent = category;
+      card.appendChild(header);
+
+      const grid = document.createElement("div");
+      grid.className = items.length <= 2 ? "btn-grid wide" : "btn-grid";
+
+      items.forEach(({ full, label }) => {
+        const btn = document.createElement("button");
+        btn.className = "log-btn";
+        const { complexity, detail } = parseLabel(label);
+        btn.innerHTML = `<span class="complexity">${complexity}</span>${detail ? `<span class="detail">${detail}</span>` : ""}`;
+        btn.onclick = () => submitEntry(full, btn);
+        grid.appendChild(btn);
+      });
+
+      card.appendChild(grid);
+      container.appendChild(card);
+    });
+  }
+
+  // ── Fetch options from Google Sheets via Apps Script ──────
+  // Loads the button list when the page first opens
+  async function loadOptions() {
+    try {
+      const res  = await fetch(`${SCRIPT_URL}?action=getOptions`);
+      const data = await res.json();
+      const groups = groupOptions(data);
+      renderGroups(groups);
+      document.getElementById("loading").style.display = "none";
+      document.getElementById("main").style.display    = "block";
+    } catch (err) {
+      document.getElementById("loading").textContent = "Could not load options. Check your connection and refresh.";
+    }
+  }
+
+  // ── Send a log entry to Google Sheets via Apps Script ─────
+  // Called when a button is clicked or the ad-hoc form is submitted
+  async function submitEntry(entry, btn) {
+    if (btn) btn.disabled = true;
+    try {
+      const res  = await fetch(`${SCRIPT_URL}?action=log&entry=${encodeURIComponent(entry)}`);
+      const data = await res.json();
+      if (data.status === "success") {
+        showToast("Logged: " + entry, "success");
+      } else {
+        showToast("Something went wrong. Try again.", "error");
+      }
+    } catch {
+      showToast("Could not save. Check your connection.", "error");
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  // ── Handle ad-hoc text submission ─────────────────────────
+  // Validates the text box isn't empty, then sends the entry
+  function submitAdhoc() {
+    const val = document.getElementById("adhoc").value.trim();
+    if (!val) { showToast("Please type something first.", "error"); return; }
+    submitEntry(val, null);
+    document.getElementById("adhoc").value = "";
+  }
+
+  // ── Allow pressing Enter (without Shift) to submit ad-hoc ─
+  document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("adhoc").addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitAdhoc(); }
+    });
+  });
+
+  // ── Toast notification ────────────────────────────────────
+  // Shows a small pop-up message at the bottom of the screen
+  function showToast(msg, type) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.className   = `show ${type}`;
+    setTimeout(() => { t.className = ""; }, 3000);
+  }
+
+  // ── Initialise ────────────────────────────────────────────
+  loadOptions();
+</script>
+</body>
+</html>
