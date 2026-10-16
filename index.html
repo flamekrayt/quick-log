@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Quick Log</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📝</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
   <style>
     /* ── Tokens ── */
     :root {
@@ -33,6 +33,93 @@
       padding: 24px 16px 48px;
     }
 
+    /* ── Login screen ── */
+    #login-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .login-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2.5rem 2rem;
+      width: 100%;
+      max-width: 340px;
+      text-align: center;
+    }
+
+    .login-card h1 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.25rem;
+    }
+
+    .login-card p {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+    }
+
+    .login-card input[type="password"] {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      margin-bottom: 0.75rem;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .login-card input[type="password"]:focus { border-color: var(--accent); }
+
+    .remember-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      justify-content: center;
+    }
+
+    .remember-row input[type="checkbox"] { width: auto; margin: 0; cursor: pointer; }
+
+    .remember-row label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 0.65rem 1rem;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+
+    .login-btn:hover { background: var(--accent-dk); }
+
+    .login-error {
+      font-size: 0.78rem;
+      color: var(--error);
+      margin-top: 0.6rem;
+      min-height: 1.1em;
+    }
+
+    /* ── Main app ── */
+    #app { display: none; }
+
     /* ── Layout ── */
     .wrap {
       max-width: 680px;
@@ -41,6 +128,9 @@
 
     header {
       margin-bottom: 28px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
     }
 
     header h1 {
@@ -55,6 +145,22 @@
       color: var(--muted);
       margin-top: 3px;
     }
+
+    .signout-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 6px 12px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      cursor: pointer;
+      white-space: nowrap;
+      margin-top: 2px;
+      transition: background 0.12s, color 0.12s;
+      flex-shrink: 0;
+    }
+
+    .signout-btn:hover { background: var(--error-bg); color: var(--error); border-color: var(--error); }
 
     /* ── Section label ── */
     .section-label {
@@ -92,10 +198,7 @@
       background: var(--border);
     }
 
-    /* Wide rows: 1 column */
-    .btn-grid.wide {
-      grid-template-columns: 1fr;
-    }
+    .btn-grid.wide { grid-template-columns: 1fr; }
 
     .log-btn {
       background: var(--surface);
@@ -111,6 +214,7 @@
 
     .log-btn:hover  { background: #EEF2FA; }
     .log-btn:active { background: #DDE5F5; }
+    .log-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .log-btn .complexity {
       display: block;
@@ -164,7 +268,7 @@
       transition: background 0.12s;
     }
 
-    .submit-btn:hover   { background: var(--accent-dk); }
+    .submit-btn:hover    { background: var(--accent-dk); }
     .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     /* ── Toast ── */
@@ -183,11 +287,7 @@
       white-space: nowrap;
     }
 
-    #toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     #toast.success { background: var(--success-bg); color: var(--success); border: 1px solid #A7D7BE; }
     #toast.error   { background: var(--error-bg);   color: var(--error);   border: 1px solid #F5C0C0; }
 
@@ -208,34 +308,123 @@
   </style>
 </head>
 <body>
-<div class="wrap">
 
-  <header>
-    <h1>Quick Log</h1>
-    <p id="datetime">Loading…</p>
-  </header>
-
-  <div id="loading">Loading options…</div>
-  <div id="main">
-    <div id="categories"></div>
-
-    <div class="section-label" style="margin-top:20px;">Ad-hoc entry</div>
-    <div class="adhoc-card">
-      <textarea id="adhoc" placeholder="Type a custom entry…"></textarea>
-      <button class="submit-btn" onclick="submitAdhoc()">Save entry</button>
+<!-- ══ LOGIN SCREEN ══════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <h1>📋 Quick Log</h1>
+    <p>Enter your password to continue</p>
+    <input type="password" id="pw-input" placeholder="Password" />
+    <div class="remember-row">
+      <input type="checkbox" id="remember-me" checked />
+      <label for="remember-me">Remember me on this device</label>
     </div>
+    <button class="login-btn" onclick="login()">Sign in</button>
+    <div id="login-error" class="login-error"></div>
   </div>
-
 </div>
 
-<!-- Toast -->
+<!-- ══ MAIN APP ═══════════════════════════════════════════════ -->
+<div id="app">
+  <div class="wrap">
+
+    <header>
+      <div>
+        <h1>📋 Quick Log</h1>
+        <p id="datetime">Loading…</p>
+      </div>
+      <button class="signout-btn" onclick="signOut()">Sign out</button>
+    </header>
+
+    <div id="loading">Loading options…</div>
+    <div id="main">
+      <div id="categories"></div>
+
+      <div class="section-label" style="margin-top:20px;">Ad-hoc entry</div>
+      <div class="adhoc-card">
+        <textarea id="adhoc" placeholder="Type a custom entry…"></textarea>
+        <button class="submit-btn" onclick="submitAdhoc()">Save entry</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ TOAST ══════════════════════════════════════════════════ -->
 <div id="toast"></div>
 
 <script>
-  // ── Config ──────────────────────────────────────────────
+  // ── Config ───────────────────────────────────────────────────
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbytIkIYWgTpI28ZrxpF-G8QLRzP1xutfIG-aEDR1BrQfDKx2fAhJQARkd7EDqyBt-Pv/exec";
 
-  // ── Clock ────────────────────────────────────────────────
+  // ── Auth state ───────────────────────────────────────────────
+  // Tracks whether the user is authenticated in this session
+  let sessionAuth = false;
+
+  // ── On page load: check if this device is already authenticated ──
+  // If "remember me" was ticked on a previous visit, skip the login screen
+  (function checkSavedAuth() {
+    if (localStorage.getItem("ql_auth") === "true") {
+      sessionAuth = true;
+      showApp();
+    }
+  })();
+
+  // Allow pressing Enter in the password field to log in
+  document.getElementById("pw-input").addEventListener("keydown", e => {
+    if (e.key === "Enter") login();
+  });
+
+  // ── Login ────────────────────────────────────────────────────
+  // Sends the password to the Apps Script to verify.
+  // If correct, shows the main app. If "remember me" is ticked,
+  // saves an auth flag in the browser so the user stays logged in.
+  async function login() {
+    const pw = document.getElementById("pw-input").value;
+    const remember = document.getElementById("remember-me").checked;
+    const errEl = document.getElementById("login-error");
+    errEl.textContent = "";
+
+    if (!pw) { errEl.textContent = "Please enter your password."; return; }
+
+    try {
+      const res  = await fetch(`${SCRIPT_URL}?action=checkPassword&password=${encodeURIComponent(pw)}`);
+      const data = await res.json();
+
+      if (data.result === true) {
+        sessionAuth = true;
+        // Save auth flag in browser if "remember me" is ticked.
+        // This stores only a flag, never the password itself.
+        if (remember) localStorage.setItem("ql_auth", "true");
+        showApp();
+      } else {
+        errEl.textContent = "Incorrect password. Please try again.";
+      }
+    } catch {
+      errEl.textContent = "Could not connect. Check your connection and try again.";
+    }
+  }
+
+  // ── Show main app after successful login ─────────────────────
+  function showApp() {
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    loadOptions();
+  }
+
+  // ── Sign out ─────────────────────────────────────────────────
+  // Clears the saved auth flag and returns to the login screen
+  function signOut() {
+    if (!confirm("Sign out? You will need to enter the password again on this device.")) return;
+    localStorage.removeItem("ql_auth");
+    sessionAuth = false;
+    document.getElementById("app").style.display = "none";
+    document.getElementById("login-screen").style.display = "flex";
+    document.getElementById("pw-input").value = "";
+    document.getElementById("login-error").textContent = "";
+  }
+
+  // ── Clock ────────────────────────────────────────────────────
   // Updates the date/time display in the header every second
   function updateClock() {
     const now = new Date();
@@ -261,17 +450,15 @@
     return groups;
   }
 
-  // ── Parse button label into complexity + detail lines ──
+  // ── Parse button label into complexity + detail lines ────────
   // Splits "Simple query/SR (5mins or less)" into two display lines
   function parseLabel(label) {
     const match = label.match(/^(Simple|Intermediate|Complex|Monthly KPI report related work|ACN Training)(.*)/i);
-    if (match) {
-      return { complexity: match[1], detail: match[2].trim() };
-    }
+    if (match) return { complexity: match[1], detail: match[2].trim() };
     return { complexity: label, detail: "" };
   }
 
-  // ── Render buttons ────────────────────────────────────────
+  // ── Render buttons ───────────────────────────────────────────
   // Builds the button grid from the options fetched from Google Sheets
   function renderGroups(groups) {
     const container = document.getElementById("categories");
@@ -303,8 +490,8 @@
     });
   }
 
-  // ── Fetch options from Google Sheets via Apps Script ──────
-  // Loads the button list when the page first opens
+  // ── Fetch options from Google Sheets via Apps Script ─────────
+  // Loads the button list when the page first opens after login
   async function loadOptions() {
     try {
       const res  = await fetch(`${SCRIPT_URL}?action=getOptions`);
@@ -313,12 +500,12 @@
       renderGroups(groups);
       document.getElementById("loading").style.display = "none";
       document.getElementById("main").style.display    = "block";
-    } catch (err) {
+    } catch {
       document.getElementById("loading").textContent = "Could not load options. Check your connection and refresh.";
     }
   }
 
-  // ── Send a log entry to Google Sheets via Apps Script ─────
+  // ── Send a log entry to Google Sheets via Apps Script ────────
   // Called when a button is clicked or the ad-hoc form is submitted
   async function submitEntry(entry, btn) {
     if (btn) btn.disabled = true;
@@ -337,7 +524,7 @@
     }
   }
 
-  // ── Handle ad-hoc text submission ─────────────────────────
+  // ── Handle ad-hoc text submission ────────────────────────────
   // Validates the text box isn't empty, then sends the entry
   function submitAdhoc() {
     const val = document.getElementById("adhoc").value.trim();
@@ -346,14 +533,12 @@
     document.getElementById("adhoc").value = "";
   }
 
-  // ── Allow pressing Enter (without Shift) to submit ad-hoc ─
-  document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("adhoc").addEventListener("keydown", e => {
-      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitAdhoc(); }
-    });
+  // Allow pressing Enter (without Shift) to submit ad-hoc entry
+  document.getElementById("adhoc").addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitAdhoc(); }
   });
 
-  // ── Toast notification ────────────────────────────────────
+  // ── Toast notification ───────────────────────────────────────
   // Shows a small pop-up message at the bottom of the screen
   function showToast(msg, type) {
     const t = document.getElementById("toast");
@@ -361,9 +546,6 @@
     t.className   = `show ${type}`;
     setTimeout(() => { t.className = ""; }, 3000);
   }
-
-  // ── Initialise ────────────────────────────────────────────
-  loadOptions();
 </script>
 </body>
 </html>
